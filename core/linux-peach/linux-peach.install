@@ -9,9 +9,18 @@ flash_kernel() {
   minor=$(mountpoint -d / | cut -f 2 -d ':')
   device=$(cat /proc/partitions | awk {'if ($1 == "'${major}'" && $2 == "'${minor}'") print $4 '})
   device="/dev/${device/%2/1}"
+  device_existingfilesystem="$(blkid $device -s TYPE -o value)"
 
-  echo "A new kernel version needs to be flashed onto ${device}."
-  echo "Do you want to do this now? [y|N]"
+  echo "A new kernel version needs to be flashed onto device ${device}. This will completely replace all data on this partition."
+
+  if [[ ! -z "$device_existingfilesystem" ]]
+  then
+    echo
+    echo "WARNING: filesystem of type $device_existingfilesystem detected on this device.  It is highly unlikely you want to flash over this."
+    echo
+  fi
+
+  echo "Do you want to flash the image now? [y|N]"
   read -r shouldwe
   if [[ $shouldwe =~ ^([yY][eE][sS]|[yY])$ ]]; then
     dd if=/boot/vmlinux.kpart of=${device}
